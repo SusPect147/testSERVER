@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coin Counter</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+        }
+        .container {
+            text-align: center;
+        }
+        .button {
+            padding: 10px 20px;
+            font-size: 16px;
+            color: #fff;
+            background-color: #007bff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .button:hover {
+            background-color: #0056b3;
+        }
+        .counter {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="counter" id="coinCounter">Coins: 0</div>
+        <button class="button" onclick="increaseCounter()">Add Coin</button>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        const user = tg.initDataUnsafe?.user || {};
+        const username = user.username || `${user.first_name || ''} ${user.last_name || ''}`.trim();
+
+        let coinCount = 0;
+
+        async function fetchCoins() {
+            const response = await fetch('/api/coins', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username })
+            });
+            const data = await response.json();
+            coinCount = data.coins || 0;
+            document.getElementById('coinCounter').textContent = `Coins: ${coinCount}`;
+        }
+
+        async function increaseCounter() {
+            coinCount++;
+            document.getElementById('coinCounter').textContent = `Coins: ${coinCount}`;
+            await fetch('/api/coins', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, coins: coinCount })
+            });
+        }
+
+        fetchCoins(); // Загрузка монет при входе
+    </script>
+</body>
+</html>
