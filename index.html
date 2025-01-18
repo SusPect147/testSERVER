@@ -42,15 +42,17 @@
         <button class="button" onclick="increaseCounter()">Add Coin</button>
     </div>
 
-    <script>
-        const tg = window.Telegram.WebApp;
-        tg.expand();
-        const user = tg.initDataUnsafe?.user || {};
-        const username = user.username || `${user.first_name || ''} ${user.last_name || ''}`.trim();
+<script>
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+    const user = tg.initDataUnsafe?.user || {};
+    const username = user.username || `${user.first_name || ''} ${user.last_name || ''}`.trim();
 
-        let coinCount = 0;
+    let coinCount = 0;
 
-        async function fetchCoins() {
+    // Загрузка монет пользователя при входе
+    async function fetchCoins() {
+        try {
             const response = await fetch('/api/coins', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -59,19 +61,39 @@
             const data = await response.json();
             coinCount = data.coins || 0;
             document.getElementById('coinCounter').textContent = `Coins: ${coinCount}`;
+        } catch (error) {
+            console.error('Error fetching coins:', error);
         }
+    }
 
-        async function increaseCounter() {
+    // Увеличение счётчика монет
+    async function increaseCounter() {
+        try {
             coinCount++;
             document.getElementById('coinCounter').textContent = `Coins: ${coinCount}`;
-            await fetch('/api/coins', {
+            
+            // Отправка обновления на сервер
+            const response = await fetch('/api/coins', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, coins: coinCount })
             });
-        }
 
-        fetchCoins(); // Загрузка монет при входе
-    </script>
+            // Проверка успешного сохранения на сервере
+            const data = await response.json();
+            if (data.coins !== coinCount) {
+                console.warn('Server and client out of sync. Updating from server...');
+                coinCount = data.coins;
+                document.getElementById('coinCounter').textContent = `Coins: ${coinCount}`;
+            }
+        } catch (error) {
+            console.error('Error updating coins:', error);
+        }
+    }
+
+    // Загрузка данных при старте
+    fetchCoins();
+</script>
+
 </body>
 </html>
